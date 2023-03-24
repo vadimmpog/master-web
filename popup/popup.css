@@ -2,8 +2,8 @@ html {
     font-size: 18px;
 }
 body {
-    height: 25rem;
-    width: 20rem;
+    height: 30rem;
+    width: 25rem;
     color:black;
     font-family: "Questrial", sans-serif;
     background-color: #C4FFDB;
@@ -47,7 +47,7 @@ body {
     display: inline-flex;
     flex-direction: column;
     align-items: center;
-    padding: 3.5rem 5.2rem;
+    padding: 2rem 2rem;
     border: 3px solid black;
     border-radius: 5px;
     background: white;
@@ -84,8 +84,13 @@ body {
     transform: translate(0, 0);
 }
 
+.close {
+    display: none;
+    opacity: 0.5;
+}
+
 .options {
-    width: 100px;
+    width: 120px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;

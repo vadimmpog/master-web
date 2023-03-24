@@ -3,7 +3,7 @@
 <head>
     <title>Master Web</title>
     <meta charset="UTF-8">
-    <link rel="stylesheet" href="main.css"/>
+    <link rel="stylesheet" href="popup.css"/>
 </head>
 <body>
 <div class="modal">
@@ -11,15 +11,16 @@
     <div class="options">
         <button class="btn" id="import_button">Импорт</button>
         <button class="btn" id="create_button">Создание</button>
+        <button class="btn close" id="close_button">Завершить</button>
 <!--        <button class="btn">Список ваших сценариев</button>-->
     </div>
-    <p style="font-size: 0.8rem">Список сценариев</p>
-<!--    <select Name="Name_of_list_box" Size="7">-->
-<!--        <option> List item 1 </option>-->
-<!--        <option> List item 2 </option>-->
-<!--        <option> List item 3 </option>-->
-<!--        <option> List item N </option>-->
-<!--    </select>-->
+    <label for="scenarios" style="padding-top: 20px; padding-bottom: 10px">Список сценариев</label>
+    <select Name="scenarios_list" Size="7" id="scenarios">
+        <option id="empty_option">Нет созданных сценариев</option>
+    </select>
+
 </div>
+<script src="/popup.js"></script>
+<script src="/scenario.js"></script>
 </body>
 </html>

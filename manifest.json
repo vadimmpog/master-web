@@ -16,9 +16,10 @@
 			"48" : "icons/web-master.svg"
 		},
 		"default_title": "Master Web",
-		"default_popup": "popup/main.html"
+		"default_popup": "popup/popup.html"
 	},
 
-	"content_scripts": []
-
+	"background": {
+		"scripts": [ "background.js" ]
+	}
 }
