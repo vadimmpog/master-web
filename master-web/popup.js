@@ -1,4 +1,3 @@
-// Get the saved stats and render the data in the popup window.
 
 const MAX_ITEMS = 7;
 function sorter(array) {
@@ -7,7 +6,6 @@ function sorter(array) {
   });
 }
 function addElements(element, array, callback) {
-  console.log(element.firstElementChild)
   // while(element.firstChild) {
   //   element.removeChild(element.firstChild);
   // }
@@ -24,11 +22,12 @@ function addElements(element, array, callback) {
 }
 
 let gettingStoredStats = browser.storage.local.get();
+
+// Get the saved stats and render the data in the popup window.
 gettingStoredStats.then(results => {
   if (results.scenarios.length === 0) {
     return;
   }
-
 
   let scenariosElement = document.getElementById("scenarios");
   let sortedScenarios = sorter(results.scenarios);
@@ -37,3 +36,17 @@ gettingStoredStats.then(results => {
   });
 
 });
+
+
+var create = document.querySelector('#create_button')
+var close = document.querySelector('#close_button')
+
+create.addEventListener('click', activateSelector);
+// close.addEventListener('click', endScenario);
+
+function activateSelector() {
+  browser.window.close()
+  browser.runtime.sendMessage({
+    creationStatus: 'activate'
+  });
+}

@@ -9,7 +9,7 @@
 		"48": "icons/web-master.svg"
 	},
 
-	"permissions": ["webNavigation", "storage"],
+	"permissions": ["webNavigation", "storage", "activeTab", "<all_urls>", "storage"],
 
 	"browser_action": {
 		"default_icon": {
@@ -17,6 +17,10 @@
 		},
 		"default_title": "Master Web",
 		"default_popup": "popup/popup.html"
+	},
+
+	"options_ui": {
+		"page": "options/options.html"
 	},
 
 	"background": {
