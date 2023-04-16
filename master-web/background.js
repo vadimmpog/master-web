@@ -8,36 +8,20 @@ let gettingStoredStats = browser.storage.local.get();
 
 gettingStoredStats.then(store => {
   // Initialize the saved stats if not yet initialized.
-
-  if (!store.stats) {
+  if (!store.status) {
     store = {
       status: "default",
       scenarios: {},
-      lastStep: null,
-      lastScenario: null
+      currentScenario: null
     };
   }
-
-  // Monitor completed navigation events and update
-  // stats accordingly.
-  // browser.webNavigation.onCommitted.addListener((evt) => {
-  //   if (evt.frameId !== 0) {
-  //     return;
-  //   }
-  //
-  //   let transitionType = evt.transitionType;
-  //   store.scenarios[transitionType] = store.scenarios[transitionType] || 0;
-  //   store.scenarios[transitionType]++;
-  //
-  //   // Persist the updated stats.
-    browser.storage.local.set(store);
-  // });
-
+  browser.storage.local.set(store);
 });
 
 const inspect = {
-  toggleActivate: (id, type, icon) => {
+  toggleActivate: (id, type) => {
     this.id = id;
+    let icon = type === 'activate' ? activeIcon : defaultIcon
     browserAppData.tabs.executeScript(id, { file: inspectFile }, () => { browserAppData.tabs.sendMessage(id, { action: type }); });
     browserAppData.browserAction.setIcon({ tabId: id, path: { 48: 'icons/' + icon } });
   }
@@ -53,41 +37,33 @@ function isSupportedProtocolAndFileType(urlString) {
   return supportedProtocols.indexOf(url.protocol) !== -1 && notSupportedFiles.indexOf(extension) === -1;
 }
 
-function toggle(tab) {
+function toggle(tab, msg) {
   if (isSupportedProtocolAndFileType(tab.url)) {
-    if (!tabs[tab.id]) {
+    if (!tabs[tab.id])
       tabs[tab.id] = Object.create(inspect);
-      inspect.toggleActivate(tab.id, 'activate', activeIcon);
-      gettingStoredStats.then( store => {
-        store.status = 'activate';
-        browser.storage.local.set(store);
-      })
-    } else {
-      inspect.toggleActivate(tab.id, 'deactivate', defaultIcon);
-      gettingStoredStats.then( store => {
-        store.status = 'deactivate'
-        store.scenarios['new scenario'] = {'steps': ['step1', 'step2'], 'author': 'Vadim'}
-        store.scenarios['new scenario 2'] = {'steps': ['step1', 'step2'], 'author': 'Vadim'}
-        browser.storage.local.set(store);
-      })
-      for (const tabId in tabs) {
+    else
+      for (const tabId in tabs)
         if (tabId == tab.id) delete tabs[tabId];
-      }
-    }
+
+    inspect.toggleActivate(tab.id, msg.status);
+    gettingStoredStats.then( store => {
+      store.status = msg.status
+      browser.storage.local.set(store);
+    })
   }
 }
 
 async function getActiveTab() {
   let store = await gettingStoredStats;
   browser.tabs.query({ active: true, currentWindow: true }, tab => {
-    inspect.toggleActivate(tab[0].id, store.status, activeIcon);
+    inspect.toggleActivate(tab[0].id, store.status);
   });
 }
 
 async function activateSelector(msg) {
   browser.tabs.query({currentWindow: true, active: true}).then((tabs) => {
     let tab = tabs[0];
-    toggle(tab, msg)
+    toggle(tab, msg);
   })
 }
 

@@ -1,5 +1,6 @@
-
 const MAX_ITEMS = 7;
+let gettingStoredStats = browser.storage.local.get();
+
 function sorter(array) {
   return Object.keys(array).sort((a, b) => {
     return array[a] <= array[b];
@@ -13,9 +14,7 @@ function addElements(element, array, callback) {
     }
 
   for (let i=0; i < array.length; i++) {
-    if (i >= MAX_ITEMS) {
-      break;
-    }
+    if (i >= MAX_ITEMS) break;
 
     const listItem = document.createElement("option");
     listItem.textContent = callback(array[i]);
@@ -23,14 +22,11 @@ function addElements(element, array, callback) {
   }
 }
 
-let gettingStoredStats = browser.storage.local.get();
 
 // Get the saved stats and render the data in the popup window.
 gettingStoredStats.then(store => {
   if (store.status === "activate") createScenario(); else endScenario();
-  if (store.scenarios.length === 0) {
-    return;
-  }
+  if (store.scenarios.length === 0) return;
 
   let scenariosElement = document.getElementById("scenarios");
   let sortedScenarios = sorter(store.scenarios);
@@ -63,7 +59,8 @@ function endScenario() {
 function activate() {
   createScenario()
   browser.runtime.sendMessage({
-    status: 'activate'
+    status: 'activate',
+    scenarioName: 'text'
   });
 }
 
