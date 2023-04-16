@@ -24,15 +24,17 @@ function addElements(element, array, callback) {
 let gettingStoredStats = browser.storage.local.get();
 
 // Get the saved stats and render the data in the popup window.
-gettingStoredStats.then(results => {
-  if (results.scenarios.length === 0) {
+gettingStoredStats.then(store => {
+  console.log(store.status)
+  if (store.status === "activate") { createScenario() }
+  if (store.scenarios.length === 0) {
     return;
   }
 
   let scenariosElement = document.getElementById("scenarios");
-  let sortedScenarios = sorter(results.scenarios);
+  let sortedScenarios = sorter(store.scenarios);
   addElements(scenariosElement, sortedScenarios, (scenario) => {
-    return `${scenario}: ${results.scenarios[scenario]}`;
+    return `${scenario}: ${store.scenarios[scenario]}`;
   });
 
 });
@@ -41,12 +43,23 @@ gettingStoredStats.then(results => {
 var create = document.querySelector('#create_button')
 var close = document.querySelector('#close_button')
 
-create.addEventListener('click', activateSelector);
-// close.addEventListener('click', endScenario);
+create.addEventListener('click', createScenario);
+close.addEventListener('click', endScenario);
 
-function activateSelector() {
-  browser.window.close()
+function createScenario() {
+  document.querySelector('.message').textContent = "Вопроизведите сценарий и завершите создание"
+  document.getElementById("import_button").style.display = "none";
+  document.getElementById("create_button").style.display = "none";
+  document.getElementById("close_button").style.display = "block";
   browser.runtime.sendMessage({
     creationStatus: 'activate'
+  });
+}
+function endScenario() {
+  document.getElementById("import_button").style.display = "";
+  document.getElementById("create_button").style.display = "";
+  document.getElementById("close_button").style.display = "none";
+  browser.runtime.sendMessage({
+    creationStatus: 'deactivate'
   });
 }

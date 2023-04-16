@@ -33,7 +33,6 @@ var xPathFinder = xPathFinder || (() => {
           contentHtml.id = this.contentNode;
           document.body.appendChild(contentHtml);
         }
-        this.options.clipboard && ( this.copyText(this.XPath) );
       }
     }
 
@@ -41,7 +40,6 @@ var xPathFinder = xPathFinder || (() => {
       const storage = chrome.storage && (chrome.storage.local);
       const promise = storage.get({
         inspector: true,
-        clipboard: true,
         shortid: true,
         position: 'bl'
       }, this.setOptions);
@@ -98,15 +96,6 @@ var xPathFinder = xPathFinder || (() => {
     removeOverlay() {
       const overlayHtml = document.getElementById(this.overlayElement);
       overlayHtml && overlayHtml.remove();
-    }
-
-    copyText(XPath) {
-      const hdInp = document.createElement('textarea');
-      hdInp.textContent = XPath;
-      document.body.appendChild(hdInp);
-      hdInp.select();
-      document.execCommand('copy');
-      hdInp.remove();
     }
 
     draw(e) {
