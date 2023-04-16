@@ -12,24 +12,26 @@ gettingStoredStats.then(store => {
   if (!store.stats) {
     store = {
       status: "default",
-      scenarios: {}
+      scenarios: {},
+      lastStep: null,
+      lastScenario: null
     };
   }
 
   // Monitor completed navigation events and update
   // stats accordingly.
-  browser.webNavigation.onCommitted.addListener((evt) => {
-    if (evt.frameId !== 0) {
-      return;
-    }
-
-    let transitionType = evt.transitionType;
-    store.scenarios[transitionType] = store.scenarios[transitionType] || 0;
-    store.scenarios[transitionType]++;
-
-    // Persist the updated stats.
+  // browser.webNavigation.onCommitted.addListener((evt) => {
+  //   if (evt.frameId !== 0) {
+  //     return;
+  //   }
+  //
+  //   let transitionType = evt.transitionType;
+  //   store.scenarios[transitionType] = store.scenarios[transitionType] || 0;
+  //   store.scenarios[transitionType]++;
+  //
+  //   // Persist the updated stats.
     browser.storage.local.set(store);
-  });
+  // });
 
 });
 
@@ -57,13 +59,15 @@ function toggle(tab) {
       tabs[tab.id] = Object.create(inspect);
       inspect.toggleActivate(tab.id, 'activate', activeIcon);
       gettingStoredStats.then( store => {
-        store.status = 'activate'
+        store.status = 'activate';
         browser.storage.local.set(store);
       })
     } else {
       inspect.toggleActivate(tab.id, 'deactivate', defaultIcon);
       gettingStoredStats.then( store => {
         store.status = 'deactivate'
+        store.scenarios['new scenario'] = {'steps': ['step1', 'step2'], 'author': 'Vadim'}
+        store.scenarios['new scenario 2'] = {'steps': ['step1', 'step2'], 'author': 'Vadim'}
         browser.storage.local.set(store);
       })
       for (const tabId in tabs) {
@@ -73,13 +77,19 @@ function toggle(tab) {
   }
 }
 
-async function activateSelector() {
+async function getActiveTab() {
+  let store = await gettingStoredStats;
+  browser.tabs.query({ active: true, currentWindow: true }, tab => {
+    inspect.toggleActivate(tab[0].id, store.status, activeIcon);
+  });
+}
+
+async function activateSelector(msg) {
   browser.tabs.query({currentWindow: true, active: true}).then((tabs) => {
     let tab = tabs[0];
-    toggle(tab)
-    gettingStoredStats.then( store => {console.log(store.status)})
+    toggle(tab, msg)
   })
 }
 
-// browserAppData.tabs.onUpdated.addListener(getActiveTab);
+browserAppData.tabs.onUpdated.addListener(getActiveTab);
 browserAppData.runtime.onMessage.addListener(activateSelector);

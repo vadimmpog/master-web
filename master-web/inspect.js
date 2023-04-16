@@ -15,9 +15,9 @@ var xPathFinder = xPathFinder || (() => {
     }
 
     getData(e, iframe) {
-      e.stopImmediatePropagation();
-      e.preventDefault && e.preventDefault();
-      e.stopPropagation && e.stopPropagation();
+      // e.stopImmediatePropagation(); // disable site logic
+      // e.preventDefault && e.preventDefault();
+      // e.stopPropagation && e.stopPropagation();
 
       if (e.target.id !== this.contentNode) {
         this.XPath = this.getXPath(e.target);
@@ -25,6 +25,7 @@ var xPathFinder = xPathFinder || (() => {
         const iframeNode    = window.frameElement || iframe;
         const contentString = iframeNode ? `Iframe: ${this.getXPath(iframeNode)}<br/>XPath: ${this.XPath}` : this.XPath;
 
+        // display xpath
         if (contentNode) {
           contentNode.innerHTML = contentString;
         } else {
@@ -33,6 +34,11 @@ var xPathFinder = xPathFinder || (() => {
           contentHtml.id = this.contentNode;
           document.body.appendChild(contentHtml);
         }
+
+        gettingStoredStats.then( store => {
+          store.lastStep = contentString
+          browser.storage.local.set(store);
+        })
       }
     }
 
