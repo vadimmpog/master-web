@@ -8,11 +8,12 @@ let gettingStoredStats = browser.storage.local.get();
 
 gettingStoredStats.then(store => {
   // Initialize the saved stats if not yet initialized.
-  if (!store.status) {
+  if (!store.scenarios) {
     store = {
       status: "default",
-      scenarios: {},
-      currentScenario: null
+      scenarios: [],
+      currentScenario: null,
+      currentUser: null
     };
   }
   browser.storage.local.set(store);
@@ -60,12 +61,36 @@ async function getActiveTab() {
   });
 }
 
-async function activateSelector(msg) {
+function msgController(msg) {
   browser.tabs.query({currentWindow: true, active: true}).then((tabs) => {
     let tab = tabs[0];
     toggle(tab, msg);
   })
+  switch (msg.status) {
+    case 'activate': {
+      createScenario(msg.scenarioName);
+      break;
+    }
+    case 'deactivate': {
+      saveScenario();
+      break;
+    }
+  }
+}
+
+function createScenario(scenarioName) {
+  gettingStoredStats.then(store => {
+    store.scenarios.push({'name': scenarioName, 'steps': [], 'author': 'Vadim'});
+    store.currentScenario = scenarioName
+    browser.storage.local.set(store);
+  });
+}
+
+function saveScenario() {
+  browser.storage.local.get().then(store => {
+    console.log(store) // save to db
+  });
 }
 
 browserAppData.tabs.onUpdated.addListener(getActiveTab);
-browserAppData.runtime.onMessage.addListener(activateSelector);
+browserAppData.runtime.onMessage.addListener(msgController);

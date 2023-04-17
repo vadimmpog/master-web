@@ -1,11 +1,5 @@
-const MAX_ITEMS = 7;
+const MAX_ITEMS = 20;
 let gettingStoredStats = browser.storage.local.get();
-
-function sorter(array) {
-  return Object.keys(array).sort((a, b) => {
-    return array[a] <= array[b];
-  });
-}
 
 function addElements(element, array, callback) {
   if (array.length !== 0)
@@ -25,13 +19,11 @@ function addElements(element, array, callback) {
 
 // Get the saved stats and render the data in the popup window.
 gettingStoredStats.then(store => {
-  if (store.status === "activate") createScenario(); else endScenario();
+  if (store.status === "activate") createScenarioView(); else endScenarioView();
   if (store.scenarios.length === 0) return;
-
   let scenariosElement = document.getElementById("scenarios");
-  let sortedScenarios = sorter(store.scenarios);
-  addElements(scenariosElement, sortedScenarios, (scenario) => {
-    return `${store.scenarios[scenario].author}: ${scenario}`;
+  addElements(scenariosElement, store.scenarios, (scenario) => {
+    return `${scenario.name}: steps ${scenario.steps.length}`;
   });
 
 });
@@ -43,21 +35,21 @@ var close = document.querySelector('#close_button')
 create.addEventListener('click', activate);
 close.addEventListener('click', deactivate);
 
-function createScenario() {
+function createScenarioView() {
   document.querySelector('.message').textContent = "Вопроизведите сценарий и завершите создание"
   document.getElementById("import_button").style.display = "none";
   document.getElementById("create_button").style.display = "none";
   document.getElementById("close_button").style.display = "block";
 }
 
-function endScenario() {
+function endScenarioView() {
   document.getElementById("import_button").style.display = "";
   document.getElementById("create_button").style.display = "";
   document.getElementById("close_button").style.display = "none";
 }
 
 function activate() {
-  createScenario()
+  createScenarioView()
   browser.runtime.sendMessage({
     status: 'activate',
     scenarioName: 'text'
@@ -65,7 +57,7 @@ function activate() {
 }
 
 function deactivate() {
-  endScenario()
+  endScenarioView()
   browser.runtime.sendMessage({
     status: 'deactivate'
   });

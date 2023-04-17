@@ -1,4 +1,3 @@
-/* globals chrome */
 var xPathFinder = xPathFinder || (() => {
   class Inspector {
     constructor() {
@@ -21,8 +20,8 @@ var xPathFinder = xPathFinder || (() => {
 
       if (e.target.id !== this.contentNode) {
         this.XPath = this.getXPath(e.target);
-        const contentNode   = document.getElementById(this.contentNode);
-        const iframeNode    = window.frameElement || iframe;
+        const contentNode = document.getElementById(this.contentNode);
+        const iframeNode = window.frameElement || iframe;
         const contentString = iframeNode ? `Iframe: ${this.getXPath(iframeNode)}<br/>XPath: ${this.XPath}` : this.XPath;
 
         // display xpath
@@ -35,10 +34,12 @@ var xPathFinder = xPathFinder || (() => {
           document.body.appendChild(contentHtml);
         }
 
-        gettingStoredStats.then( store => {
-          store.lastStep = contentString
+        browser.storage.local.get().then( store => {
+          let scenario = store.scenarios.find(element => element.name == store.currentScenario);
+          scenario.steps.push(contentString)
+          scenario.author = 'Vadim2'
           browser.storage.local.set(store);
-        })
+        });
       }
     }
 
@@ -169,7 +170,6 @@ var xPathFinder = xPathFinder || (() => {
         frameDocument.removeEventListener('click', this.getData, true);
         this.options && this.options.inspector && ( frameDocument.removeEventListener('mouseover', this.draw) );
       }
-      
     }
 
     getXPath(el) {
@@ -301,7 +301,12 @@ var xPathFinder = xPathFinder || (() => {
     if (request.action === 'activate') {
       return inspect.getOptions();
     }
-    return inspect.deactivate();
+    if (request.action === 'deactivate') {
+      browser.storage.local.get().then(store => {
+        let scenario = store.scenarios.find(i => i.name === store.currentScenario)
+      });
+      return inspect.deactivate();
+    }
   });
 
   return true;
