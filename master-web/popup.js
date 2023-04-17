@@ -18,11 +18,12 @@ function addElements(element, array, callback) {
 
 
 // Get the saved stats and render the data in the popup window.
-gettingStoredStats.then(store => {
+gettingStoredStats.then(async store => {
   if (store.status === "activate") createScenarioView(); else endScenarioView();
-  if (store.scenarios.length === 0) return;
+  let scenarios = await getScenariosDB()
+  if (scenarios.length === 0) return;
   let scenariosElement = document.getElementById("scenarios");
-  addElements(scenariosElement, store.scenarios, (scenario) => {
+  addElements(scenariosElement, scenarios, (scenario) => {
     return `${scenario.name}: steps ${scenario.steps.length}`;
   });
 
@@ -61,4 +62,15 @@ function deactivate() {
   browser.runtime.sendMessage({
     status: 'deactivate'
   });
+}
+
+async function getScenariosDB() {
+  return await fetch("http://127.0.0.1:5000/scenarios", {
+    method: "Get",
+    headers: {
+      'Content-Type': 'application/json;charset=utf-8'
+    }
+  }).then(function (res) {
+    return res.json()
+  })
 }

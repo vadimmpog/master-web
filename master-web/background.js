@@ -87,10 +87,25 @@ function createScenario(scenarioName) {
 }
 
 function saveScenario() {
-  browser.storage.local.get().then(store => {
-    console.log(store) // save to db
+  browser.storage.local.get().then(async store => {
+    await saveScenarioDB(store.scenarios.find(it => it.name === store.currentScenario))
   });
 }
 
 browserAppData.tabs.onUpdated.addListener(getActiveTab);
 browserAppData.runtime.onMessage.addListener(msgController);
+
+async function saveScenarioDB(scenario) {
+    let response = await fetch("http://127.0.0.1:5000/scenarios", {
+      method: "Post",
+      headers: {
+        'Content-Type': 'application/json;charset=utf-8'
+      },
+      body: JSON.stringify(scenario)
+    });
+    if (response.ok) {
+      console.log("Сохранение прошло успешно.");
+    } else {
+      console.log("Ошибка " + response.status)
+    }
+}

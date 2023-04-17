@@ -302,9 +302,6 @@ var xPathFinder = xPathFinder || (() => {
       return inspect.getOptions();
     }
     if (request.action === 'deactivate') {
-      browser.storage.local.get().then(store => {
-        let scenario = store.scenarios.find(i => i.name === store.currentScenario)
-      });
       return inspect.deactivate();
     }
   });
