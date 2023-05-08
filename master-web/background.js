@@ -8,7 +8,7 @@ let gettingStoredStats = browser.storage.local.get();
 
 gettingStoredStats.then(store => {
   // Initialize the saved stats if not yet initialized.
-  if (!store.scenarios) {
+  if (store.scenarios === undefined) {
     store = {
       status: "default",
       scenarios: [],
@@ -28,6 +28,9 @@ const inspect = {
   }
 };
 
+browserAppData.tabs.onUpdated.addListener(getActiveTab);
+browserAppData.runtime.onMessage.addListener(msgController);
+
 function isSupportedProtocolAndFileType(urlString) {
   if (!urlString) { return false; }
   const supportedProtocols = ['https:', 'http:', 'file:'];
@@ -37,6 +40,8 @@ function isSupportedProtocolAndFileType(urlString) {
   url.href = urlString;
   return supportedProtocols.indexOf(url.protocol) !== -1 && notSupportedFiles.indexOf(extension) === -1;
 }
+
+// --------------------- inspector logic --------------------- //
 
 function toggle(tab, msg) {
   if (isSupportedProtocolAndFileType(tab.url)) {
@@ -78,6 +83,8 @@ function msgController(msg) {
   }
 }
 
+// --------------------- scenario logic --------------------- //
+
 function createScenario(scenarioName) {
   gettingStoredStats.then(store => {
     store.scenarios.push({'name': scenarioName, 'steps': [], 'author': 'Vadim'});
@@ -91,9 +98,6 @@ function saveScenario() {
     await saveScenarioDB(store.scenarios.find(it => it.name === store.currentScenario))
   });
 }
-
-browserAppData.tabs.onUpdated.addListener(getActiveTab);
-browserAppData.runtime.onMessage.addListener(msgController);
 
 async function saveScenarioDB(scenario) {
     let response = await fetch("http://127.0.0.1:5000/scenarios", {

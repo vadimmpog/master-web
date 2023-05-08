@@ -7,17 +7,30 @@
 </head>
 <body>
 <div class="modal">
+
     <p class="message">Импортируйте или создайте учебный сценарий</p>
-    <div class="options">
+    <div class="page" id="main">
         <button class="btn" id="import_button">Импорт</button>
         <button class="btn" id="create_button">Создание</button>
-        <button class="btn close" id="close_button">Завершить</button>
-<!--        <button class="btn">Список ваших сценариев</button>-->
     </div>
-    <label for="scenarios" style="padding-top: 20px; padding-bottom: 10px">Список сценариев</label>
-    <select Name="scenarios_list" Size="7" id="scenarios">
-        <option id="empty_option">Нет созданных сценариев</option>
-    </select>
+
+    <div class="page hidden" id="creation">
+        <input class="text" placeholder="Название" id="input_scenario">
+        <button class="btn" id="start">Начать</button>
+    </div>
+
+    <div class="page hidden" id="end">
+        <p><i>Информация о сценарии</i></p>
+        <button class="btn close" id="close_button">Завершить</button>
+    </div>
+
+    <div class="scenarios">
+        <label for="scenarios_list" style="padding-top: 20px; padding-bottom: 10px">Список сценариев</label>
+        <select Name="scenarios_list" Size="7" id="scenarios_list">
+            <option id="empty_option">Нет созданных сценариев</option>
+        </select>
+    </div>
+
 
 </div>
 <script src="../popup.js"></script>

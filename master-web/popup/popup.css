@@ -6,26 +6,9 @@ body {
     width: 25rem;
     color:black;
     font-family: "Questrial", sans-serif;
-    background-color: #C4FFDB;
-    background-image: linear-gradient(
-            45deg,
-            #7ceca1 25%,
-            transparent 25%,
-            transparent 75%,
-            #7ceca1 75%,
-            #7ceca1
-    ),
-    linear-gradient(
-            -45deg,
-            #7ceca1 25%,
-            transparent 25%,
-            transparent 75%,
-            #7ceca1 75%,
-            #7ceca1
-    );
+    background-color: #00000033;
     background-size: 60px 60px;
     background-position: 0 0;
-    animation: slide 4s infinite linear;
 }
 
 @keyframes slide {
@@ -40,10 +23,11 @@ body {
 
 .modal {
     position: absolute;
-    left: 50%;
-    top: 50%;
+    height: 26.5rem;
+    width: 21.5rem;
+    left: 49.8%;
+    top: 49.8%;
     transform: translate(-50%, -50%);
-    width: auto;
     display: inline-flex;
     flex-direction: column;
     align-items: center;
@@ -51,7 +35,6 @@ body {
     border: 3px solid black;
     border-radius: 5px;
     background: white;
-    box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.2);
 }
 .message {
     font-size:1.1rem;
@@ -85,13 +68,37 @@ body {
 }
 
 .close {
-    display: none;
     opacity: 0.5;
 }
 
-.options {
+.page {
     width: 120px;
     display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.text {
+    color:inherit;
+    font-family:inherit;
+    font-size: inherit;
+    background: white;
+    padding: 0.3rem 0.3rem;
+    border: 3px solid black;
+    margin-bottom: 0.8rem;
+    box-shadow: 0 0 0 black;
+    transition: all 0.2s;
+}
+
+.hidden {
+    display: none;
+}
+
+.scenarios {
+    width: auto;
+    height: auto;
+    display: flex;
+    align-self: center;
     flex-direction: column;
     justify-content: space-between;
 }
