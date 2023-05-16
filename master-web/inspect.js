@@ -35,9 +35,9 @@ var xPathFinder = xPathFinder || (() => {
         }
 
         browser.storage.local.get().then( store => {
-          let scenario = store.scenarios.find(element => element.name == store.currentScenario);
+          let scenario = store.localScenarios.find(element => element._id === '0');
           scenario.steps.push(contentString)
-          scenario.author = 'Vadim2'
+          scenario.author = 'Pogodin Vadim'
           browser.storage.local.set(store);
         });
       }
@@ -301,7 +301,7 @@ var xPathFinder = xPathFinder || (() => {
     if (request.action === 'activate') {
       return inspect.getOptions();
     }
-    if (request.action === 'deactivate') {
+    if (request.action === 'main') {
       return inspect.deactivate();
     }
   });

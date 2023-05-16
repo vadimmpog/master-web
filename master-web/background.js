@@ -6,18 +6,40 @@ const defaultIcon = 'web-master.svg';
 
 let gettingStoredStats = browser.storage.local.get();
 
+// ----------------- local storage logic ----------------- //
 gettingStoredStats.then(store => {
   // Initialize the saved stats if not yet initialized.
-  if (store.scenarios === undefined) {
-    store = {
-      status: "default",
-      scenarios: [],
-      currentScenario: null,
-      currentUser: null
-    };
-  }
-  browser.storage.local.set(store);
+  getScenariosDB().then(scenarios => {
+    if (store.localScenarios === undefined) {
+      store = {
+        status: "main",
+        localScenarios: scenarios,
+        currentScenarioId: null,
+        currentUser: null
+      };
+    }
+    browser.storage.local.set(store);
+  })
 });
+
+function updateScenariosList() {
+  gettingStoredStats.then(store => {
+    getScenariosDB().then(scenarios => {
+      store.localScenarios = scenarios
+      browser.storage.local.set(store)
+      browser.runtime.sendMessage({response: "complete"});
+    })
+  })
+}
+
+function setStatus(status) {
+  gettingStoredStats.then(store => {
+    store.status = status
+    browser.storage.local.set(store);
+  })
+}
+
+// --------------------- inspector logic --------------------- //
 
 const inspect = {
   toggleActivate: (id, type) => {
@@ -27,9 +49,6 @@ const inspect = {
     browserAppData.browserAction.setIcon({ tabId: id, path: { 48: 'icons/' + icon } });
   }
 };
-
-browserAppData.tabs.onUpdated.addListener(getActiveTab);
-browserAppData.runtime.onMessage.addListener(msgController);
 
 function isSupportedProtocolAndFileType(urlString) {
   if (!urlString) { return false; }
@@ -41,8 +60,6 @@ function isSupportedProtocolAndFileType(urlString) {
   return supportedProtocols.indexOf(url.protocol) !== -1 && notSupportedFiles.indexOf(extension) === -1;
 }
 
-// --------------------- inspector logic --------------------- //
-
 function toggle(tab, msg) {
   if (isSupportedProtocolAndFileType(tab.url)) {
     if (!tabs[tab.id])
@@ -52,11 +69,15 @@ function toggle(tab, msg) {
         if (tabId == tab.id) delete tabs[tabId];
 
     inspect.toggleActivate(tab.id, msg.status);
-    gettingStoredStats.then( store => {
-      store.status = msg.status
-      browser.storage.local.set(store);
-    })
+    setStatus(msg.status)
   }
+}
+
+function inspector(msg) {
+  browser.tabs.query({currentWindow: true, active: true}).then((tabs) => {
+    let tab = tabs[0];
+    toggle(tab, msg);
+  })
 }
 
 async function getActiveTab() {
@@ -66,18 +87,25 @@ async function getActiveTab() {
   });
 }
 
-function msgController(msg) {
-  browser.tabs.query({currentWindow: true, active: true}).then((tabs) => {
-    let tab = tabs[0];
-    toggle(tab, msg);
-  })
-  switch (msg.status) {
+// --------------------- listeners, msg controller --------------------- //
+
+browserAppData.tabs.onUpdated.addListener(getActiveTab);
+browserAppData.runtime.onMessage.addListener(msgController);
+
+function msgController(request) {
+  switch (request.status) {
     case 'activate': {
-      createScenario(msg.scenarioName);
+      inspector(request)
+      createScenario(request.scenarioName);
       break;
     }
-    case 'deactivate': {
+    case 'main': {
+      inspector(request)
       saveScenario();
+      break;
+    }
+    case 'update': {
+      updateScenariosList()
       break;
     }
   }
@@ -87,17 +115,22 @@ function msgController(msg) {
 
 function createScenario(scenarioName) {
   gettingStoredStats.then(store => {
-    store.scenarios.push({'name': scenarioName, 'steps': [], 'author': 'Vadim'});
-    store.currentScenario = scenarioName
+    store.localScenarios.push({'_id': '0', 'name': scenarioName, 'steps': [], 'author': 'Vadim'});
     browser.storage.local.set(store);
   });
 }
 
 function saveScenario() {
   browser.storage.local.get().then(async store => {
-    await saveScenarioDB(store.scenarios.find(it => it.name === store.currentScenario))
+    let scenario = store.localScenarios.find(it => it._id === '0');
+    if (scenario.steps.length > 0) {
+      await saveScenarioDB(scenario)
+      updateScenariosList()
+    }
   });
 }
+
+// --------------------- db communication logic --------------------- //
 
 async function saveScenarioDB(scenario) {
     let response = await fetch("http://127.0.0.1:5000/scenarios", {
@@ -112,4 +145,15 @@ async function saveScenarioDB(scenario) {
     } else {
       console.log("Ошибка " + response.status)
     }
+}
+
+async function getScenariosDB() {
+  return await fetch("http://127.0.0.1:5000/scenarios", {
+    method: "Get",
+    headers: {
+      'Content-Type': 'application/json;charset=utf-8'
+    }
+  }).then(function (res) {
+    return res.json()
+  })
 }
