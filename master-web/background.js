@@ -15,6 +15,7 @@ gettingStoredStats.then(store => {
         status: "main",
         localScenarios: scenarios,
         currentScenarioId: null,
+        currentStep: 0,
         currentUser: null
       };
     }
@@ -27,7 +28,7 @@ function updateScenariosList() {
     getScenariosDB().then(scenarios => {
       store.localScenarios = scenarios
       browser.storage.local.set(store)
-      browser.runtime.sendMessage({response: "complete"});
+      browser.runtime.sendMessage({response: "list_updated"});
     })
   })
 }
@@ -92,16 +93,26 @@ async function getActiveTab() {
 browserAppData.tabs.onUpdated.addListener(getActiveTab);
 browserAppData.runtime.onMessage.addListener(msgController);
 
-function msgController(request) {
-  switch (request.status) {
+function msgController(msg) {
+  switch (msg.status) {
     case 'activate': {
-      inspector(request)
-      createScenario(request.scenarioName);
+      inspector(msg)
+      createScenario(msg.scenarioName);
       break;
     }
-    case 'main': {
-      inspector(request)
+    case 'deactivate': {
+      msg.status = 'main'
+      inspector(msg)
       saveScenario();
+      break;
+    }
+    case 'examination': {
+      examineScenario(msg)
+      break;
+    }
+    case 'end_examination': {
+      msg.status = 'main'
+      examineScenario(msg)
       break;
     }
     case 'update': {
@@ -127,6 +138,16 @@ function saveScenario() {
       await saveScenarioDB(scenario)
       updateScenariosList()
     }
+  });
+}
+
+function examineScenario(msg) {
+  gettingStoredStats.then(store => {
+    store.currentScenarioId = msg.scenarioID;
+    store.status = msg.status;
+    store.currentStep = 0;
+    browser.storage.local.set(store);
+    browser.runtime.sendMessage({response: "examine_updated"});
   });
 }
 
