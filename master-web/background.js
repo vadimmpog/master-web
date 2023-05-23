@@ -4,15 +4,16 @@ const inspectFile = 'inspect.js';
 const activeIcon = 'web-master-active.svg';
 const defaultIcon = 'web-master.svg';
 
-let gettingStoredStats = browser.storage.local.get();
+let gettingStore = browser.storage.local.get();
 
 // ----------------- local storage logic ----------------- //
-gettingStoredStats.then(store => {
+gettingStore.then(store => {
   // Initialize the saved stats if not yet initialized.
   getScenariosDB().then(scenarios => {
     if (store.localScenarios === undefined) {
       store = {
         status: "main",
+        inspectorStatus: "deactivate",
         localScenarios: scenarios,
         currentScenarioId: null,
         currentStep: 0,
@@ -23,18 +24,17 @@ gettingStoredStats.then(store => {
   })
 });
 
-function updateScenariosList() {
-  gettingStoredStats.then(store => {
+async function updateScenariosList() {
+  gettingStore.then(store => {
     getScenariosDB().then(scenarios => {
       store.localScenarios = scenarios
       browser.storage.local.set(store)
-      browser.runtime.sendMessage({response: "list_updated"});
     })
   })
 }
 
 function setStatus(status) {
-  gettingStoredStats.then(store => {
+  gettingStore.then(store => {
     store.status = status
     browser.storage.local.set(store);
   })
@@ -43,10 +43,11 @@ function setStatus(status) {
 // --------------------- inspector logic --------------------- //
 
 const inspect = {
-  toggleActivate: (id, type) => {
+  toggleActivate: (id, type, show) => {
+    console.log(show)
     this.id = id;
     let icon = type === 'activate' ? activeIcon : defaultIcon
-    browserAppData.tabs.executeScript(id, { file: inspectFile }, () => { browserAppData.tabs.sendMessage(id, { action: type }); });
+    browserAppData.tabs.executeScript(id, { file: inspectFile }, () => { browserAppData.tabs.sendMessage(id, { action: type, showInspector: show }); });
     browserAppData.browserAction.setIcon({ tabId: id, path: { 48: 'icons/' + icon } });
   }
 };
@@ -61,7 +62,7 @@ function isSupportedProtocolAndFileType(urlString) {
   return supportedProtocols.indexOf(url.protocol) !== -1 && notSupportedFiles.indexOf(extension) === -1;
 }
 
-function toggle(tab, msg) {
+function toggle(tab, inspectorStatus, show) {
   if (isSupportedProtocolAndFileType(tab.url)) {
     if (!tabs[tab.id])
       tabs[tab.id] = Object.create(inspect);
@@ -69,22 +70,26 @@ function toggle(tab, msg) {
       for (const tabId in tabs)
         if (tabId == tab.id) delete tabs[tabId];
 
-    inspect.toggleActivate(tab.id, msg.status);
-    setStatus(msg.status)
+    inspect.toggleActivate(tab.id, inspectorStatus, show);
   }
 }
 
-function inspector(msg) {
+function inspector(inspectorStatus, show) {
   browser.tabs.query({currentWindow: true, active: true}).then((tabs) => {
     let tab = tabs[0];
-    toggle(tab, msg);
+    toggle(tab, inspectorStatus, show);
+    gettingStore.then(store => {
+      store.inspector = inspectorStatus
+      store.inspectorShow = show
+      browser.storage.local.set(store);
+    })
   })
 }
 
 async function getActiveTab() {
-  let store = await gettingStoredStats;
+  let store = await gettingStore;
   browser.tabs.query({ active: true, currentWindow: true }, tab => {
-    inspect.toggleActivate(tab[0].id, store.status);
+    inspect.toggleActivate(tab[0].id, store.inspector, store.inspectorShow);
   });
 }
 
@@ -93,30 +98,34 @@ async function getActiveTab() {
 browserAppData.tabs.onUpdated.addListener(getActiveTab);
 browserAppData.runtime.onMessage.addListener(msgController);
 
-function msgController(msg) {
+function msgController(msg, sender, sendResponse) {
   switch (msg.status) {
-    case 'activate': {
-      inspector(msg)
+    case 'creation': {
+      setStatus(msg.status)
+      inspector(msg.inspectorStatus, msg.inspectorShow)
       createScenario(msg.scenarioName);
       break;
     }
-    case 'deactivate': {
-      msg.status = 'main'
-      inspector(msg)
+    case 'end_creation': {
+      setStatus('main')
+      inspector(msg.inspectorStatus, msg.inspectorShow)
       saveScenario();
       break;
     }
     case 'examination': {
-      examineScenario(msg)
-      break;
+      setStatus(msg.status)
+      inspector(msg.inspectorStatus, msg.inspectorShow)
+      examineScenario(msg, sendResponse).then(scenario => {sendResponse({scenario: scenario})});
+      return true;
     }
     case 'end_examination': {
-      msg.status = 'main'
-      examineScenario(msg)
-      break;
+      setStatus('main')
+      inspector(msg.inspectorStatus, msg.inspectorShow)
+      examineScenario(msg, sendResponse).then(r => {sendResponse({response: "examine_updated"})});
+      return true;
     }
     case 'update': {
-      updateScenariosList()
+      updateScenariosList(msg, sendResponse).then(r => {sendResponse({response: "response from update"})});
       break;
     }
   }
@@ -125,7 +134,7 @@ function msgController(msg) {
 // --------------------- scenario logic --------------------- //
 
 function createScenario(scenarioName) {
-  gettingStoredStats.then(store => {
+  gettingStore.then(store => {
     store.localScenarios.push({'_id': '0', 'name': scenarioName, 'steps': [], 'author': 'Vadim'});
     browser.storage.local.set(store);
   });
@@ -141,14 +150,12 @@ function saveScenario() {
   });
 }
 
-function examineScenario(msg) {
-  gettingStoredStats.then(store => {
-    store.currentScenarioId = msg.scenarioID;
-    store.status = msg.status;
-    store.currentStep = 0;
-    browser.storage.local.set(store);
-    browser.runtime.sendMessage({response: "examine_updated"});
-  });
+async function examineScenario(msg) {
+  let store = await gettingStore
+  store.currentScenarioId = msg.scenarioID;
+  store.currentStep = 0;
+  browser.storage.local.set(store);
+  return store.localScenarios.find(scenario => scenario._id === msg.scenarioID)
 }
 
 // --------------------- db communication logic --------------------- //

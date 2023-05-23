@@ -3,7 +3,7 @@ const browserAppData = this.browser || this.chrome;
 
 function saveOptions(e) {
   browserAppData.storage.local.set({
-    inspector: document.querySelector('#inspector').checked,
+    // inspector: document.querySelector('#inspector').checked,
     shortid: document.querySelector('#shortid').checked,
     position: document.querySelector('#position').value
   }, () => {
@@ -18,7 +18,7 @@ function saveOptions(e) {
 
 function restoreOptions() {
   browserAppData.storage.local.get({
-    inspector: true,
+    // inspector: false,
     shortid: true,
     position: 'bl'
   }, items => {

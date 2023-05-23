@@ -2,35 +2,22 @@ const MAX_ITEMS = 20;
 // statuses
 const EXAMINATION = 'examination'
 const END_EXAMINATION = 'end_examination'
-const EDUCATION = 'education'
-const CREATION = 'activate'
-const END_CREATION = 'deactivate'
+// const EDUCATION = 'education'
+const CREATION = 'creation'
+const ACTIVATE = 'activate'
+const DEACTIVATE = 'deactivate'
+const END_CREATION = 'end_creation'
 const MAIN = 'main'
 const UPDATE = 'update'
 //views
 const views = ["main", "creation", "adding_steps", "examination"]
 
-let gettingStoredStats = browser.storage.local.get();
-
-function addElements(element, array, callback) {
-  if (array.length !== 0)
-    while(element.firstChild) {
-      element.removeChild(element.firstChild);
-    }
-
-  for (let i=0; i < array.length; i++) {
-    if (i >= MAX_ITEMS) break;
-
-    const listItem = document.createElement("option");
-    listItem.textContent = callback(array[i]);
-    listItem.id = array[i]._id;
-    element.appendChild(listItem);
-  }
-}
+let gettingStore = browser.storage.local.get();
 
 // Get the saved stats and render the data in the popup window.
-gettingStoredStats.then(async store => {
+gettingStore.then(async store => {
   console.log(store.status)
+  console.log(store.inspector)
   switch (store.status){
     case CREATION: addStepsView(); break;
     case MAIN: mainView(); break;
@@ -51,12 +38,28 @@ start.addEventListener('click', activate);
 create.addEventListener('click', createScenarioView);
 close.addEventListener('click', deactivate);
 closeExamination.addEventListener('click', endExamineScenario);
-scenariosList.addEventListener('dblclick', examineScenario, false);
+scenariosList.addEventListener('dblclick', examineScenario);
 
 // ----------------------------- frontend logic ----------------------------- //
 
+function addElements(element, array, callback) {
+  if (array.length !== 0)
+    while(element.firstChild) {
+      element.removeChild(element.firstChild);
+    }
+
+  for (let i=0; i < array.length; i++) {
+    if (i >= MAX_ITEMS) break;
+
+    const listItem = document.createElement("option");
+    listItem.textContent = callback(array[i]);
+    listItem.id = array[i]._id;
+    element.appendChild(listItem);
+  }
+}
+
 function updateScenariosList() {
-  gettingStoredStats.then(store => {
+  gettingStore.then(store => {
     let scenarios = store.localScenarios
     if (scenarios.length === 0) return;
     let scenariosElement = document.getElementById("scenarios_list");
@@ -66,10 +69,10 @@ function updateScenariosList() {
   })
 }
 
-function updateExamine() {
-  gettingStoredStats.then(store => {
+function updateExamine(msg) {
+  gettingStore.then(store => {
+    let scenario = (msg !== undefined) ? msg.scenario : store.localScenarios.find(scenario => scenario._id === store.currentScenarioId)
     let scenarioInfoElement = document.getElementById("scenario_examination_info");
-    let scenario = store.localScenarios.find(scenario => scenario._id === store.currentScenarioId)
     scenarioInfoElement.textContent = `Шаг ${store.currentStep + 1} из ${scenario.steps.length}`;
   })
 }
@@ -87,9 +90,10 @@ function mainView() {
   update()
 }
 
-function examineScenarioView() {
+function examineScenarioView(msg) {
+  updateExamine(msg)
   hideOtherViewsAndSetMsg("examination", "Самостоятельно пройдите сценарий")
-  update()
+  // update()
 }
 
 function hideOtherViewsAndSetMsg(currentView, msg) {
@@ -103,22 +107,26 @@ function hideOtherViewsAndSetMsg(currentView, msg) {
 
 // ----------------------------- background script interaction ----------------------------- //
 
-function examineScenario(el) {
-  gettingStoredStats.then(async store => {
-    if (store.status === MAIN) {
-      browser.runtime.sendMessage({
-        status: EXAMINATION,
-        scenarioID: el.target.id
-      });
-    }
-    examineScenarioView()
-  });
+async function examineScenario(el) {
+  let store = await gettingStore
+  if (store.status === MAIN) {
+    const sending = browser.runtime.sendMessage({
+      status: EXAMINATION,
+      inspectorStatus: ACTIVATE,
+      inspectorShow: false,
+      scenarioID: el.target.id
+
+    });
+    sending.then(examineScenarioView, handleError);
+  }
 }
 
 async function endExamineScenario() {
   mainView()
   browser.runtime.sendMessage({
-    status: END_EXAMINATION
+    status: END_EXAMINATION,
+    inspectorStatus: DEACTIVATE,
+    inspectorShow: false,
   });
 }
 
@@ -128,6 +136,8 @@ function activate() {
   document.getElementById("input_scenario").value = ""
   browser.runtime.sendMessage({
     status: CREATION,
+    inspectorStatus: ACTIVATE,
+    inspectorShow: true,
     scenarioName: scenarioName
   });
 }
@@ -135,27 +145,19 @@ function activate() {
 function deactivate() {
   mainView()
   browser.runtime.sendMessage({
-    status: END_CREATION
+    status: END_CREATION,
+    inspectorStatus: DEACTIVATE,
+    inspectorShow: true
   });
 }
 
 function update() {
-  browser.runtime.sendMessage({
+  const sending = browser.runtime.sendMessage({
     status: UPDATE
-  })
+  });
+  sending.then(updateScenariosList, handleError);
 }
 
-browser.runtime.onMessage.addListener(msgController);
-
-function msgController(msg) {
-  switch (msg.response) {
-    case 'examine_updated': {
-      updateExamine()
-      break;
-    }
-    case 'list_updated': {
-      updateScenariosList()
-      break;
-    }
-  }
+function handleError(error) {
+  console.log(`Error: ${error}`);
 }

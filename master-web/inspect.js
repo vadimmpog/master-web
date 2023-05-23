@@ -35,18 +35,34 @@ var xPathFinder = xPathFinder || (() => {
         }
 
         browser.storage.local.get().then( store => {
-          let scenario = store.localScenarios.find(element => element._id === '0');
-          scenario.steps.push(contentString)
-          scenario.author = 'Pogodin Vadim'
+          switch (store.status) {
+            case "creation": {
+              let scenario = store.localScenarios.find(element => element._id === '0');
+              scenario.steps.push(contentString)
+              scenario.author = 'Pogodin Vadim'
+              break;
+            }
+            case "examination": {
+              let scenario = store.localScenarios.find(element => element._id === store.currentScenarioId);
+              if (scenario.steps[store.currentStep] === contentString) {
+                store.currentStep += 1
+              }
+              if (scenario.steps.length === store.currentStep) {
+                store.status = "finished"
+                this.deactivate()
+              }
+              break;
+            }
+          }
           browser.storage.local.set(store);
         });
       }
     }
 
-    getOptions() {
+    getOptions(show) {
       const storage = chrome.storage && (chrome.storage.local);
       const promise = storage.get({
-        inspector: true,
+        inspector: storage.inspectorShow,
         shortid: true,
         position: 'bl'
       }, this.setOptions);
@@ -299,9 +315,9 @@ var xPathFinder = xPathFinder || (() => {
 
   chrome.runtime.onMessage.addListener(request => {
     if (request.action === 'activate') {
-      return inspect.getOptions();
+      return inspect.getOptions(request.showInspector);
     }
-    if (request.action === 'main') {
+    if (request.action === 'deactivate') {
       return inspect.deactivate();
     }
   });
