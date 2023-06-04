@@ -103,6 +103,10 @@ function hideOtherViewsAndSetMsg(currentView, msg) {
     if (view !== currentView)
       document.getElementById(view).style.display = "none"
   });
+  if (currentView === 'main')
+    document.getElementById("scenarios").style.display = "flex"
+  else
+    document.getElementById("scenarios").style.display = "none"
 }
 
 // ----------------------------- background script interaction ----------------------------- //
