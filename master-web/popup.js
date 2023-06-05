@@ -2,6 +2,7 @@ const MAX_ITEMS = 20;
 // statuses
 const EXAMINATION = 'examination'
 const END_EXAMINATION = 'end_examination'
+const FINISHED_EXAMINATION = 'finished'
 // const EDUCATION = 'education'
 const CREATION = 'creation'
 const ACTIVATE = 'activate'
@@ -22,6 +23,7 @@ gettingStore.then(async store => {
     case CREATION: addStepsView(); break;
     case MAIN: mainView(); break;
     case EXAMINATION: examineScenarioView(); break;
+    case FINISHED_EXAMINATION: endExamineScenarioView(); break;
   }
 });
 
@@ -81,6 +83,12 @@ function createScenarioView() {
   hideOtherViewsAndSetMsg("creation", "Введите название сценария")
 }
 
+function endExamineScenarioView() {
+  hideOtherViewsAndSetMsg("examination", "Введите название сценария")
+  document.getElementById("scenario_examination_info").textContent = "Вы прошли сценарий!";
+  document.getElementById("close_examination_button").textContent = "Завершить";
+}
+
 function addStepsView() {
   hideOtherViewsAndSetMsg("adding_steps", "Пройдите по логическому пути сценария и завершите создание")
 }
@@ -93,7 +101,6 @@ function mainView() {
 function examineScenarioView(msg) {
   updateExamine(msg)
   hideOtherViewsAndSetMsg("examination", "Самостоятельно пройдите сценарий")
-  // update()
 }
 
 function hideOtherViewsAndSetMsg(currentView, msg) {
