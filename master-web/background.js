@@ -10,7 +10,7 @@ let gettingStore = browser.storage.local.get();
 gettingStore.then(store => {
   // Initialize the saved stats if not yet initialized.
   getScenariosDB().then(scenarios => {
-    if (store.localScenarios === undefined) {
+    if (store.localScenarios === undefined || store.status === undefined) {
       store = {
         status: "main",
         inspectorStatus: "deactivate",
@@ -134,10 +134,13 @@ function msgController(msg, sender, sendResponse) {
 // --------------------- scenario logic --------------------- //
 
 function createScenario(scenarioName) {
-  gettingStore.then(store => {
-    store.localScenarios.push({'_id': '0', 'name': scenarioName, 'steps': [], 'author': 'Vadim'});
-    browser.storage.local.set(store);
-  });
+  browser.tabs.query({currentWindow: true, active: true}).then((tabs) => {
+    let tab = tabs[0]
+    gettingStore.then(store => {
+      store.localScenarios.push({'_id': '0', 'name': scenarioName, 'steps': [], 'author': 'Pogodin Vadim', 'url': tab.url});
+      browser.storage.local.set(store);
+    });
+  })
 }
 
 function saveScenario() {
@@ -155,7 +158,9 @@ async function examineScenario(msg) {
   store.currentScenarioId = msg.scenarioID;
   store.currentStep = 0;
   browser.storage.local.set(store);
-  return store.localScenarios.find(scenario => scenario._id === msg.scenarioID)
+  let scenario = store.localScenarios.find(scenario => scenario._id === msg.scenarioID)
+  browser.tabs.update({url: scenario.url})
+  return scenario
 }
 
 // --------------------- db communication logic --------------------- //

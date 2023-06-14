@@ -60,13 +60,11 @@ var xPathFinder = xPathFinder || (() => {
     }
 
     getOptions(show) {
-      const storage = chrome.storage && (chrome.storage.local);
-      const promise = storage.get({
-        inspector: storage.inspectorShow,
-        shortid: true,
-        position: 'bl'
-      }, this.setOptions);
-      (promise && promise.then) && (promise.then(this.setOptions()));
+      this.setOptions({
+          inspector: show,
+          shortid: true,
+          position: 'bl'
+        })
     }
 
     setOptions(options) {
