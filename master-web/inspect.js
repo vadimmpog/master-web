@@ -49,7 +49,11 @@ var xPathFinder = xPathFinder || (() => {
               }
               if (scenario.steps.length === store.currentStep) {
                 store.status = "finished"
-                this.deactivate()
+                browser.runtime.sendMessage({
+                  status: "finished",
+                  inspectorStatus: 'deactivate',
+                  inspectorShow: false
+                });
               }
               break;
             }

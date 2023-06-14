@@ -2,7 +2,9 @@ const browserAppData = this.browser || this.chrome;
 const tabs = {};
 const inspectFile = 'inspect.js';
 const activeIcon = 'web-master-active.svg';
+const examinationIcon = 'web-master-examination.svg';
 const defaultIcon = 'web-master.svg';
+const finishIcon = 'web-master-finish.svg';
 
 let gettingStore = browser.storage.local.get();
 
@@ -43,10 +45,12 @@ function setStatus(status) {
 // --------------------- inspector logic --------------------- //
 
 const inspect = {
-  toggleActivate: (id, type, show) => {
+  toggleActivate: (id, type, show, status) => {
     console.log(show)
     this.id = id;
     let icon = type === 'activate' ? activeIcon : defaultIcon
+    if (status === 'examination') icon = examinationIcon
+    if (status === 'finished') icon = finishIcon
     browserAppData.tabs.executeScript(id, { file: inspectFile }, () => { browserAppData.tabs.sendMessage(id, { action: type, showInspector: show }); });
     browserAppData.browserAction.setIcon({ tabId: id, path: { 48: 'icons/' + icon } });
   }
@@ -62,7 +66,7 @@ function isSupportedProtocolAndFileType(urlString) {
   return supportedProtocols.indexOf(url.protocol) !== -1 && notSupportedFiles.indexOf(extension) === -1;
 }
 
-function toggle(tab, inspectorStatus, show) {
+function toggle(tab, inspectorStatus, show, status) {
   if (isSupportedProtocolAndFileType(tab.url)) {
     if (!tabs[tab.id])
       tabs[tab.id] = Object.create(inspect);
@@ -70,14 +74,14 @@ function toggle(tab, inspectorStatus, show) {
       for (const tabId in tabs)
         if (tabId == tab.id) delete tabs[tabId];
 
-    inspect.toggleActivate(tab.id, inspectorStatus, show);
+    inspect.toggleActivate(tab.id, inspectorStatus, show, status);
   }
 }
 
-function inspector(inspectorStatus, show) {
+function inspector(inspectorStatus, show, status) {
   browser.tabs.query({currentWindow: true, active: true}).then((tabs) => {
     let tab = tabs[0];
-    toggle(tab, inspectorStatus, show);
+    toggle(tab, inspectorStatus, show, status);
     gettingStore.then(store => {
       store.inspector = inspectorStatus
       store.inspectorShow = show
@@ -89,7 +93,7 @@ function inspector(inspectorStatus, show) {
 async function getActiveTab() {
   let store = await gettingStore;
   browser.tabs.query({ active: true, currentWindow: true }, tab => {
-    inspect.toggleActivate(tab[0].id, store.inspector, store.inspectorShow);
+    inspect.toggleActivate(tab[0].id, store.inspector, store.inspectorShow, store.status);
   });
 }
 
@@ -102,30 +106,35 @@ function msgController(msg, sender, sendResponse) {
   switch (msg.status) {
     case 'creation': {
       setStatus(msg.status)
-      inspector(msg.inspectorStatus, msg.inspectorShow)
+      inspector(msg.inspectorStatus, msg.inspectorShow, msg.status)
       createScenario(msg.scenarioName);
       break;
     }
     case 'end_creation': {
       setStatus('main')
-      inspector(msg.inspectorStatus, msg.inspectorShow)
+      inspector(msg.inspectorStatus, msg.inspectorShow, msg.status)
       saveScenario();
       break;
     }
     case 'examination': {
       setStatus(msg.status)
-      inspector(msg.inspectorStatus, msg.inspectorShow)
+      inspector(msg.inspectorStatus, msg.inspectorShow, msg.status)
       examineScenario(msg, sendResponse).then(scenario => {sendResponse({scenario: scenario})});
       return true;
     }
     case 'end_examination': {
       setStatus('main')
-      inspector(msg.inspectorStatus, msg.inspectorShow)
+      inspector(msg.inspectorStatus, msg.inspectorShow, msg.status)
       examineScenario(msg, sendResponse).then(r => {sendResponse({response: "examine_updated"})});
       return true;
     }
     case 'update': {
       updateScenariosList(msg, sendResponse).then(r => {sendResponse({response: "response from update"})});
+      break;
+    }
+    case 'finished': {
+      setStatus('finished')
+      inspector(msg.inspectorStatus, msg.inspectorShow, msg.status)
       break;
     }
   }
